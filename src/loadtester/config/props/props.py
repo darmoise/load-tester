@@ -1,17 +1,25 @@
 from dataclasses import dataclass
 
 @dataclass
-class KafkaConfig:
+class KafkaProps:
     bootstrap_servers: str
     topic: str
 
 @dataclass
-class LoadTesterConfig:
-    messages_per_second: int
+class LoggerProps:
+    level: str
+    format: str
+
+@dataclass
+class LoadTesterProps:
+    rate_start: int
+    rate_step: int
+    step_period: int
     duration_seconds: int
     message_folder: str
 
 @dataclass
-class AppConfig:
-    kafka: KafkaConfig
-    load_tester: LoadTesterConfig
+class AppProps:
+    kafka: KafkaProps
+    load_tester: LoadTesterProps
+    logging: LoggerProps

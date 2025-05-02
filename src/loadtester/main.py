@@ -1,29 +1,41 @@
-(import json)
-(import time :as t)
-(import kafka :as kafka)
+from loadtester.config.config import load_config
+from loadtester.enums.error_code import ErrorCode
+from loadtester.errors.common_error import CommonError
+from loadtester.service.message_loader import load_messages
+from loadtester.service.message_sender import create_producer, send_messages
+from loadtester.config.log import setup_logging
+import logging
 
-(def producer
-  (KafkaProducer kafka
-    {"bootstrap_servers" "localhost:9092"
-     "value_serializer" (fn [v] (.encode (dumps v) "utf-8"))}))
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+)
 
-(defn send-messages [topic msg rate duration]
-  (setv interval (/ 1 rate)
-        end-time (+ (t/time) duration)
-        sent 0)
+def main():
+    cfg = load_config()
+    setup_logging(cfg)
 
-  (while (< (t/time) end-time)
-    (.send producer topic msg)
-    (+= sent 1)
-    (t/sleep interval))
+    logger = logging.getLogger(__name__)
+    logger.info("Configuration loaded")
 
-  (.flush producer)
-  (.close producer)
-  (print "Sent {sent} messages in {duration} seconds."))
+    kafka_cfg = cfg.kafka
+    load_cfg = cfg.load_tester
 
-(defn -main []
-  (setv msg {"event" "test"
-             "timestamp" (int (t/time))})
-  (send-messages "my-topic" msg 500 10))
+    messages = load_messages(load_cfg.message_folder)
+    if not messages:
+        raise CommonError(ErrorCode.EMPTY_MESSAGE_LIST)
 
-(-main)
+    producer = create_producer(kafka_cfg.bootstrap_servers)
+    count = send_messages(
+        producer=producer,
+        topic=kafka_cfg.topic,
+        messages=messages,
+        rate_start=load_cfg.rate_start,
+        rate_step=load_cfg.rate_step,
+        step_period=load_cfg.step_period,
+        total_duration=load_cfg.duration_seconds
+    )
+    print(f"Sent {count} messages.")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,14 @@
+logging:
+  level: WARNING
+  format: "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+
+kafka:
+  bootstrap_servers: 127.0.0.1:9092
+  topic: consumer
+
+load_tester:
+  rate_start: 1500
+  rate_step: 250
+  step_period: 100
+  duration_seconds: 500000
+  message_folder: messages
